@@ -175,13 +175,8 @@ def mb_conv_block(inputs, block_args, activation, drop_rate=None, prefix='', ):
     # Expansion phase
     filters = block_args.input_filters * block_args.expand_ratio
     if block_args.expand_ratio != 1:
-        x = layers.Conv2D(filters, 1,
-                          padding='same',
-                          use_bias=False,
-                          kernel_initializer=CONV_KERNEL_INITIALIZER,
-                          name=prefix + 'expand_conv')(inputs)
-        x = layers.BatchNormalization(axis=bn_axis, name=prefix + 'expand_bn')(x)
-        x = layers.Activation(activation, name=prefix + 'expand_activation')(x)
+
+        x = FastDeconv2D(filters,1,padding='same',use_bias=False,kernel_initializer=CONV_KERNEL_INITIALIZER,activation=activation)(inputs)
     else:
         x = inputs
 
@@ -204,18 +199,11 @@ def mb_conv_block(inputs, block_args, activation, drop_rate=None, prefix='', ):
 
         target_shape = (1, 1, filters) if backend.image_data_format() == 'channels_last' else (filters, 1, 1)
         se_tensor = layers.Reshape(target_shape, name=prefix + 'se_reshape')(se_tensor)
-        se_tensor = layers.Conv2D(num_reduced_filters, 1,
-                                  activation=activation,
-                                  padding='same',
-                                  use_bias=True,
-                                  kernel_initializer=CONV_KERNEL_INITIALIZER,
-                                  name=prefix + 'se_reduce')(se_tensor)
-        se_tensor = layers.Conv2D(filters, 1,
-                                  activation='sigmoid',
-                                  padding='same',
-                                  use_bias=True,
-                                  kernel_initializer=CONV_KERNEL_INITIALIZER,
-                                  name=prefix + 'se_expand')(se_tensor)
+
+        se_tensor = FastDeconv2D(num_reduced_filters,1,activation=activation,padding='same',kernel_initializer=CONV_KERNEL_INITIALIZER)(se_tensor)
+
+
+        se_tensor = FastDeconv2D(filters,1,activation='sigmoid',padding='same',kernel_initializer=CONV_KERNEL_INITIALIZER)(se_tensor)
         if backend.backend() == 'theano':
             # For the Theano backend, we have to explicitly make
             # the excitation weights broadcastable.
@@ -227,12 +215,8 @@ def mb_conv_block(inputs, block_args, activation, drop_rate=None, prefix='', ):
         x = layers.multiply([x, se_tensor], name=prefix + 'se_excite')
 
     # Output phase
-    x = layers.Conv2D(block_args.output_filters, 1,
-                      padding='same',
-                      use_bias=False,
-                      kernel_initializer=CONV_KERNEL_INITIALIZER,
-                      name=prefix + 'project_conv')(x)
-    x = layers.BatchNormalization(axis=bn_axis, name=prefix + 'project_bn')(x)
+    x = FastDeconv2D(block_args.output_filters,1,padding='same',use_bias=False,kernel_initializer=CONV_KERNEL_INITIALIZER)(x)                      
+    
     if block_args.id_skip and all(
             s == 1 for s in block_args.strides
     ) and block_args.input_filters == block_args.output_filters:
@@ -342,14 +326,10 @@ def EfficientNet(width_coefficient,
 
     # Build stem
     x = img_input
-    x = layers.Conv2D(round_filters(32, width_coefficient, depth_divisor), 3,
-                      strides=(2, 2),
+    x = FastDeconv2D(round_filters(32, width_coefficient, depth_divisor), 3,strides=(2, 2),
                       padding='same',
                       use_bias=False,
-                      kernel_initializer=CONV_KERNEL_INITIALIZER,
-                      name='stem_conv')(x)
-    x = layers.BatchNormalization(axis=bn_axis, name='stem_bn')(x)
-    x = layers.Activation(activation, name='stem_activation')(x)
+                      kernel_initializer=CONV_KERNEL_INITIALIZER)(x)
 
     # Build blocks
     num_blocks_total = sum(block_args.num_repeat for block_args in blocks_args)
@@ -389,13 +369,10 @@ def EfficientNet(width_coefficient,
                 block_num += 1
 
     # Build top
-    x = layers.Conv2D(round_filters(1280, width_coefficient, depth_divisor), 1,
+    x = FastDeconv2D(round_filters(1280, width_coefficient, depth_divisor), 1,
                       padding='same',
                       use_bias=False,
-                      kernel_initializer=CONV_KERNEL_INITIALIZER,
-                      name='top_conv')(x)
-    x = layers.BatchNormalization(axis=bn_axis, name='top_bn')(x)
-    x = layers.Activation(activation, name='top_activation')(x)
+                      kernel_initializer=CONV_KERNEL_INITIALIZER)(x)
     if include_top:
         x = layers.GlobalAveragePooling2D(name='avg_pool')(x)
         if dropout_rate and dropout_rate > 0:
