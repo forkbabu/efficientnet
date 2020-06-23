@@ -27,10 +27,10 @@ from setuptools import find_packages, setup, Command
 
 # Package meta-data.
 NAME = "efficientnet"
-DESCRIPTION = "EfficientNet model re-implementation. Keras and TensorFlow Keras."
-URL = "https://github.com/qubvel/efficientnet"
-EMAIL = "qubvel@gmail.com"
-AUTHOR = "Pavel Yakubovskiy"
+DESCRIPTION = "EfficientNet model with Fast Deconvolution"
+URL = "https://github.com/forkbabu/efficientnet"
+EMAIL = "sayantandas30011998@gmail.com"
+AUTHOR = "Sayantan Das"
 REQUIRES_PYTHON = ">=3.0.0"
 VERSION = None
 
