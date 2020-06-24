@@ -176,7 +176,7 @@ def mb_conv_block(inputs, block_args, activation, drop_rate=None, prefix='', ):
     filters = block_args.input_filters * block_args.expand_ratio
     if block_args.expand_ratio != 1:
 
-        x = FastDeconv2D(inputs.shape[-1],filters,1,padding='same',use_bias=False,kernel_initializer=CONV_KERNEL_INITIALIZER,activation=activation)(inputs)
+        x = FastDeconv2D(inputs.shape[-1],filters,kernel_size=1,padding='same',use_bias=False,kernel_initializer=CONV_KERNEL_INITIALIZER,activation=activation)(inputs)
     else:
         x = inputs
 
@@ -200,10 +200,10 @@ def mb_conv_block(inputs, block_args, activation, drop_rate=None, prefix='', ):
         target_shape = (1, 1, filters) if backend.image_data_format() == 'channels_last' else (filters, 1, 1)
         se_tensor = layers.Reshape(target_shape, name=prefix + 'se_reshape')(se_tensor)
 
-        se_tensor = FastDeconv2D(se_tensor.shape[-1],num_reduced_filters,1,activation=activation,padding='same',kernel_initializer=CONV_KERNEL_INITIALIZER)(se_tensor)
+        se_tensor = FastDeconv2D(se_tensor.shape[-1],num_reduced_filters,kernel_size=1,activation=activation,padding='same',kernel_initializer=CONV_KERNEL_INITIALIZER)(se_tensor)
 
 
-        se_tensor = FastDeconv2D(se_tensor.shape[-1],filters,1,activation='sigmoid',padding='same',kernel_initializer=CONV_KERNEL_INITIALIZER)(se_tensor)
+        se_tensor = FastDeconv2D(se_tensor.shape[-1],filters,kernel_size=1,activation='sigmoid',padding='same',kernel_initializer=CONV_KERNEL_INITIALIZER)(se_tensor)
         if backend.backend() == 'theano':
             # For the Theano backend, we have to explicitly make
             # the excitation weights broadcastable.
@@ -215,7 +215,7 @@ def mb_conv_block(inputs, block_args, activation, drop_rate=None, prefix='', ):
         x = layers.multiply([x, se_tensor], name=prefix + 'se_excite')
 
     # Output phase
-    x = FastDeconv2D(x.shape[-1],block_args.output_filters,1,padding='same',use_bias=False,kernel_initializer=CONV_KERNEL_INITIALIZER)(x)                      
+    x = FastDeconv2D(x.shape[-1],block_args.output_filters,kernel_size=1,padding='same',use_bias=False,kernel_initializer=CONV_KERNEL_INITIALIZER)(x)                      
     
     if block_args.id_skip and all(
             s == 1 for s in block_args.strides
@@ -326,7 +326,7 @@ def EfficientNet(width_coefficient,
 
     # Build stem
     x = img_input
-    x = FastDeconv2D(x.shape[-1],round_filters(32, width_coefficient, depth_divisor), 3,strides=(2, 2),
+    x = FastDeconv2D(x.shape[-1],round_filters(32, width_coefficient, depth_divisor), kernel_size=3,strides=(2, 2),
                       padding='same',
                       use_bias=False,
                       kernel_initializer=CONV_KERNEL_INITIALIZER)(x)
@@ -369,7 +369,7 @@ def EfficientNet(width_coefficient,
                 block_num += 1
 
     # Build top
-    x = FastDeconv2D(x.shape[-1],round_filters(1280, width_coefficient, depth_divisor), 1,
+    x = FastDeconv2D(x.shape[-1],round_filters(1280, width_coefficient, depth_divisor), kernel_size=1,
                       padding='same',
                       use_bias=False,
                       kernel_initializer=CONV_KERNEL_INITIALIZER)(x)
