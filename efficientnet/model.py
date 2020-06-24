@@ -326,7 +326,8 @@ def EfficientNet(width_coefficient,
 
     # Build stem
     x = img_input
-    x = FastDeconv2D(x.shape[-1],round_filters(32, width_coefficient, depth_divisor), kernel_size=3,stride=2,
+    x = FastDeconv2D(x.shape[-1],round_filters(32, width_coefficient, depth_divisor), kernel_size=3,
+                      stride=2,
                       padding='same',
                       use_bias=False,
                       kernel_initializer=CONV_KERNEL_INITIALIZER)(x)
